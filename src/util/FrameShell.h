@@ -55,7 +55,7 @@ public:
 	double movedByOpt;
 
 	// Illumination information
-	float illuminationIntensity
+	float illuminationIntensity;
 	Vec3f illuminationPosition;
 
 
@@ -71,7 +71,7 @@ public:
 		trackingRef=0;
 		camToTrackingRef = SE3();
 		illuminationIntensity = 0;
-		illuminationIntensity = Vec3f(0,0,0);
+		illuminationPosition = Vec3f(0,0,0);
 	}
 };
 
