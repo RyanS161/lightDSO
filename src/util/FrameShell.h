@@ -54,6 +54,10 @@ public:
 	int marginalizedAt;
 	double movedByOpt;
 
+	// Illumination information
+	float illuminationIntensity
+	Vec3f illuminationPosition;
+
 
 	inline FrameShell()
 	{
@@ -66,6 +70,8 @@ public:
 		statistics_outlierResOnThis=statistics_goodResOnThis=0;
 		trackingRef=0;
 		camToTrackingRef = SE3();
+		illuminationIntensity = 0;
+		illuminationIntensity = Vec3f(0,0,0);
 	}
 };
 

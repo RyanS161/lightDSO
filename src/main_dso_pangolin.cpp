@@ -65,6 +65,8 @@ float playbackSpeed=0;	// 0 for linearize (play as fast as possible, while seque
 bool preload=false;
 bool useSampleOutput=false;
 
+float illuminationIntensity=0;
+Vec3f illuminationPosition(0,0,0);
 
 int mode=0;
 
@@ -306,6 +308,31 @@ void parseArgument(char* arg)
 		return;
 	}
 
+	if(1==sscanf(arg,"illuminationIntensity=%f",&foption))
+	{
+		illuminationIntensity = foption;
+		printf("IlluminationIntensity %f!\n", illuminationIntensity);
+		return;
+	}
+	if(1==sscanf(arg,"illuminationX=%f",&foption))
+	{
+		illuminationPosition[0] = foption;
+		printf("illuminationPosition X %f!\n", illuminationPosition[0]);
+		return;
+	}
+	if(1==sscanf(arg,"illuminationY=%f",&foption))
+	{
+		illuminationPosition[1] = foption;
+		printf("illuminationPosition Y %f!\n", illuminationPosition[1]);
+		return;
+	}
+	if(1==sscanf(arg,"illuminationZ=%f",&foption))
+	{
+		illuminationPosition[2] = foption;
+		printf("IlluminationIntensity Z %f!\n", illuminationPosition[2]);
+		return;
+	}
+
 	if(1==sscanf(arg,"save=%d",&option))
 	{
 		if(option==1)
@@ -392,6 +419,8 @@ int main( int argc, char** argv )
 
 	FullSystem* fullSystem = new FullSystem();
 	fullSystem->setGammaFunction(reader->getPhotometricGamma());
+	fullSystem->illuminationIntensity = illuminationIntensity;
+	fullSystem->illuminationPosition = illuminationPosition;
 	fullSystem->linearizeOperation = (playbackSpeed==0);
 
 

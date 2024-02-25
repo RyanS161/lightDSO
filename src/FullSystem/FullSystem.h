@@ -162,6 +162,9 @@ public:
 	void setGammaFunction(float* BInv);
 	void setOriginalCalib(const VecXf &originalCalib, int originalW, int originalH);
 
+	float illuminationIntensity;
+	Vec3f illuminationPosition;
+
 private:
 
 	CalibHessian Hcalib;

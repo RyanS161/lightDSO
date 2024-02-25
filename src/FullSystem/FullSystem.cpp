@@ -814,6 +814,8 @@ void FullSystem::addActiveFrame( ImageAndExposure* image, int id )
     shell->marginalizedAt = shell->id = allFrameHistory.size();
     shell->timestamp = image->timestamp;
     shell->incoming_id = id;
+	shell->illuminationIntensity = illuminationIntensity;
+	shell->illuminationPosition = illuminationPosition;
 	fh->shell = shell;
 	allFrameHistory.push_back(shell);
 
