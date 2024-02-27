@@ -55,6 +55,7 @@ std::string vignette = "";
 std::string gammaCalib = "";
 std::string source = "";
 std::string calib = "";
+std::string results_file = "result.txt";
 double rescale = 1;
 bool reverse = false;
 bool disableROS = false;
@@ -277,6 +278,13 @@ void parseArgument(char* arg)
 	{
 		calib = buf;
 		printf("loading calibration from %s!\n", calib.c_str());
+		return;
+	}
+
+	if(1==sscanf(arg,"resultFile=%s",buf))
+	{
+		results_file = buf;
+		printf("saving results to %s!\n", results_file.c_str());
 		return;
 	}
 
@@ -560,7 +568,7 @@ int main( int argc, char** argv )
         gettimeofday(&tv_end, NULL);
 
 
-        fullSystem->printResult("result.txt");
+        fullSystem->printResult(results_file);
 
 
         int numFramesProcessed = abs(idsToPlay[0]-idsToPlay.back());

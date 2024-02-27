@@ -41,8 +41,6 @@ def pipeline(run_data_name):
     shutil.copy(os.path.join(SPELUNK_PATH, 'poses.csv'), os.path.join(RUN_DATA_PATH, run_data_name))
     shutil.copy(os.path.join(SPELUNK_PATH, 'times.txt'), os.path.join(RUN_DATA_PATH, run_data_name))
     shutil.copy(os.path.join(CALIB_PATH, 'camera.txt'), os.path.join(RUN_DATA_PATH, run_data_name))
-    shutil.copy(os.path.join(CALIB_PATH, 'pcalib.txt'), os.path.join(RUN_DATA_PATH, run_data_name))
-    shutil.copy(os.path.join(CALIB_PATH, 'vignette.png'), os.path.join(RUN_DATA_PATH, run_data_name))
 
 
     for filename in os.listdir(SPELUNK_PATH):
@@ -53,8 +51,8 @@ def pipeline(run_data_name):
     os.remove(os.path.join(SPELUNK_PATH, 'times.txt'))
 
     print("successful save to", os.path.join(RUN_DATA_PATH, run_data_name))
-    print("setting os.environ['CURRENT_RUN_DIR'] to", run_data_name)
-    os.environ["CURRENT_RUN_DIR"] = run_data_name
+    # print("setting os.environ['CURRENT_RUN_DIR'] to", run_data_name)
+    # os.environ["CURRENT_RUN_DIR"] = run_data_name
 
 
 

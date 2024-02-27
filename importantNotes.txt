@@ -1,0 +1,10 @@
+Need to use this command to run spelunk:
+./spelunk --save-poses --save-images
+
+
+Rename files command: 
+rename 's/color_(\d+)_left\.jpg/$1.jpg/' color_*_left.jpg
+
+Run on CURRENT_RUN_DIR:
+
+export CURRENT_RUN_DIR=run_name && ./bin/dso_dataset files=~/workspace/run_data/$CURRENT_RUN_DIR/images.zip calib=~/workspace/run_data/$CURRENT_RUN_DIR/camera.txt preset=0 mode=2 resultFile=~/workspace/run_data/$CURRENT_RUN_DIR/dso_result.txt
