@@ -11,11 +11,13 @@ CALIB_PATH = "/home/ryanslocum/workspace/lightDSO/spelunkCalib"
 
 
 def pipeline(run_data_name):
+
+    output_path = os.path.join(RUN_DATA_PATH, run_data_name)
     if len(os.listdir(SPELUNK_PATH)) < 10:
         print("Looks like there's nothing here...")
         return  
 
-    if os.path.isdir(os.path.join(RUN_DATA_PATH, run_data_name)):
+    if os.path.isdir(output_path):
         print(f"The target directory already exists")
         return 
 
@@ -36,11 +38,11 @@ def pipeline(run_data_name):
                 zipf.write(os.path.join(SPELUNK_PATH, filename), arcname=filename)
 
 
-    os.makedirs(os.path.join(RUN_DATA_PATH, run_data_name))
-    shutil.copy(os.path.join(SPELUNK_PATH, 'images.zip'), os.path.join(RUN_DATA_PATH, run_data_name))
-    shutil.copy(os.path.join(SPELUNK_PATH, 'poses.csv'), os.path.join(RUN_DATA_PATH, run_data_name))
-    shutil.copy(os.path.join(SPELUNK_PATH, 'times.txt'), os.path.join(RUN_DATA_PATH, run_data_name))
-    shutil.copy(os.path.join(CALIB_PATH, 'camera.txt'), os.path.join(RUN_DATA_PATH, run_data_name))
+    os.makedirs(output_path)
+    shutil.copy(os.path.join(SPELUNK_PATH, 'images.zip'), output_path)
+    shutil.copy(os.path.join(SPELUNK_PATH, 'poses.csv'), output_path)
+    shutil.copy(os.path.join(SPELUNK_PATH, 'times.txt'), output_path)
+    shutil.copy(os.path.join(CALIB_PATH, 'camera.txt'), output_path)
 
 
     for filename in os.listdir(SPELUNK_PATH):
@@ -50,7 +52,7 @@ def pipeline(run_data_name):
     os.remove(os.path.join(SPELUNK_PATH, 'poses.csv'))
     os.remove(os.path.join(SPELUNK_PATH, 'times.txt'))
 
-    print("successful save to", os.path.join(RUN_DATA_PATH, run_data_name))
+    print("successful save to", output_path)
     # print("setting os.environ['CURRENT_RUN_DIR'] to", run_data_name)
     # os.environ["CURRENT_RUN_DIR"] = run_data_name
 
