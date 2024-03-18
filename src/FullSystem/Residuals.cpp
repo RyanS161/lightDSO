@@ -195,8 +195,6 @@ double PointFrameResidual::linearize(CalibHessian* HCalib)
 
         Vec3f hitColor = (getInterpolatedElement33(dIl, Ku, Kv, wG[0]));
 
-		Vec3f light_to_point = (KliP - LIGHT_VEC).normalized();
-		float reflectedLightIntensity = LIGHT_INT * std::max<float>(0, light_to_point.dot(hitColor));
         float residual = hitColor[0] - (float)(affLL[0] * color[idx] + affLL[1]) - reflectedLightIntensity;
 
 
