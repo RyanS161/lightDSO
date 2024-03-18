@@ -195,7 +195,7 @@ double PointFrameResidual::linearize(CalibHessian* HCalib)
 
         Vec3f hitColor = (getInterpolatedElement33(dIl, Ku, Kv, wG[0]));
 
-        float residual = hitColor[0] - (float)(affLL[0] * color[idx] + affLL[1]) - reflectedLightIntensity;
+        float residual = hitColor[0] - (float)(affLL[0] * color[idx] + affLL[1]);
 
 
 
