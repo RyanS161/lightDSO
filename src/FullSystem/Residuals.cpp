@@ -193,14 +193,14 @@ double PointFrameResidual::linearize(CalibHessian* HCalib)
 		projectedTo[idx][1] = Kv;
 
 
-                Vec3f hitColor = (getInterpolatedElement33(dIl, Ku, Kv, wG[0]));
+        Vec3f hitColor = (getInterpolatedElement33(dIl, Ku, Kv, wG[0]));
 
 		const float LIGHT_LAMBDA = 1;
 		Vec3f current_point = Vec3f(KliP[0], KliP[1], 1/(point->idepth_scaled));
 		Vec3f light_to_point = current_point - light_vec;
 		float light_to_point_len = light_to_point.norm();
 		float reflectedLightIntensity = LIGHT_LAMBDA * light_int * (1/(light_to_point_len*light_to_point_len));
-                float residual = hitColor[0] - (float)(affLL[0] * color[idx] + affLL[1]) - reflectedLightIntensity;
+        float residual = hitColor[0] - (float)(affLL[0] * color[idx] + affLL[1]) - reflectedLightIntensity;
 		//printf("Current P:  (%.2f, %.2f, %.2f) | Distance: %.3f | ReflectedLightIntensity : %f | residual %f | oldRes: %f\n", current_point[0], current_point[1], current_point[2], light_to_point_len, reflectedLightIntensity, residual, residual + reflectedLightIntensity);
 
 

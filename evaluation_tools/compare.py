@@ -3,13 +3,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
 from evaluate_rpe import read_trajectory, evaluate_trajectory
+from evaluate_ate import evaluate_ate
 import os
 
-# Comparison tools
-    # https://github.com/weichnn/Evaluation_Tools
-    # https://github.com/gereon-t/trajectopy?tab=readme-ov-file
+ALGO_NAMES = ["dso_result_", "lightDSO_result_lambda1_5_"] # Or lightDSO_result_lambda1_ or lightDSO_result_lambda1_5_ or lightDSO_result_lambda2_
 
-
+RESULTS_DIR = "/Users/ryanslocum/Downloads/run_data_transfer/"
+PLOT_DIR = "/Users/ryanslocum/Documents/class/seniorThesis/repos/lightDSO/evaluation_tools/plots/" + ALGO_NAMES[1]
+RESULT_NAMES = [
+    "backwards_2min",
+    "close_quarters_2min",
+    "completely_planar_2min",
+    "frequent_stops_2min",
+    "mostly_straight_2min",
+    "straight_fullspeed_3min",
+    "tricky_2min",
+    "turn_around_2min"
+]
+NUM_EVAL = 5
 
 def clean_GT(results_dir):
     with open(f"{results_dir}/poses.csv", 'r') as gt_file, \
@@ -32,13 +43,58 @@ def clean_GT(results_dir):
                 # print(gt_line)
                 gt_rotation_translation_matrix = np.reshape(gt_line, (4, 3)).T
 
+                # gt_rotation_matrix = gt_rotation_translation_matrix[:, :3]
+                # gt_translation = gt_rotation_translation_matrix[:, 3]
+                # gt_rotation_obj = R.from_matrix(gt_rotation_matrix)
+
+
+                # Your original matrices
                 gt_rotation_matrix = gt_rotation_translation_matrix[:, :3]
                 gt_translation = gt_rotation_translation_matrix[:, 3]
                 gt_rotation_obj = R.from_matrix(gt_rotation_matrix)
 
 
-                gt_pose = np.concatenate(([time,], gt_translation, gt_rotation_obj.as_quat()))
+                rotation_matrix_90_x = np.array([[1, 0, 0],
+                                                 [0, 0, -1],
+                                                 [0, 1, 0]]) 
+                rotation_matrix_neg90_x = np.array([[1, 0, 0],
+                                                    [0, 0, 1],
+                                                    [0, -1, 0]])
+                    
+                rotation_matrix_90_y = np.array([[0, 0, 1],
+                                                 [0, 1, 0],
+                                                 [-1, 0, 0]]) 
+                rotation_matrix_neg90_y = np.array([[0, 0, -1],
+                                                 [0, 1, 0],
+                                                 [1, 0, 0]]) 
+                
+                rotation_matrix_90_z = np.array([[0, -1, 0],
+                                                 [1, 0, 0],
+                                                 [0, 0, 1]]) 
+                rotation_matrix_neg90_z = np.array([[0, 1, 0],
+                                                 [-1, 0, 0],
+                                                 [0, 0, 1]]) 
+                
+                rotation_matrix_eye = np.eye(3)
+                
 
+
+                # Create rotation objects from the matrices
+                # rotation_obj_y = R.from_matrix(rotation_matrix_y)
+                # rotation_obj_z = R.from_matrix(rotation_matrix_z)
+                # correction_rotation_obj = rotation_obj_y * rotation_obj_z
+                correction_rotation_obj = R.from_matrix(rotation_matrix_eye)
+
+                result_rotation_obj = gt_rotation_obj * correction_rotation_obj
+
+                # Get the resulting rotation matrix
+                gt_translation = np.append(gt_translation, [1])  # Convert to homogeneous coordinates
+                correction_homogenous = np.vstack((np.hstack((correction_rotation_obj.as_matrix(), np.zeros((3,1)))), np.array([0, 0, 0, 1])))
+                # print(correction_homogenous)
+                gt_translation_rotated = correction_homogenous @ gt_translation  # Apply rotation
+                gt_translation_rotated = gt_translation_rotated[:3]  # Conv
+
+                gt_pose = np.concatenate(([time,], gt_translation_rotated, result_rotation_obj.as_quat()))
                 # Write to csv file
                 gt_traj_writer.writerow(gt_pose)
                 # print("GT Pose:", gt_pose)
@@ -57,103 +113,224 @@ def clean_data(results_dir, dso_traj_name):
 
 
 
+def read_traj_xyz(filename):
+    x,y,z = [],[],[]
+    with open(filename, 'r') as gt_file:
+        gt_reader = csv.reader(gt_file)
+        gt_poses = [list(map(float, row)) for row in gt_reader]
+
+        x = [pose[1] for pose in gt_poses]
+        y = [pose[2] for pose in gt_poses]
+        z = [pose[3] for pose in gt_poses]
+
+    return x, y, z
+
+
+def top_down_plots():
+    for name in RESULT_NAMES:
+            plot = plt.figure()
+            plt.xlabel('X')
+            plt.ylabel('Z')
+            plt.title(f'Trajectories for {name}')
+            xyz = read_traj_xyz(f"{RESULTS_DIR}{name}/gt_traj.traj")
+            plt.plot(xyz[0], xyz[2], label='Ground Truth', color='black')
+            for traj_name in ALGO_NAMES:
+                color = 'green' if traj_name == "dso_result_" else 'red'
+                linestyle = '--' if traj_name == "dso_result_" else '-'
+                label = 'DSO' if traj_name == "dso_result_" else 'modified DSO'
+
+                for iter in range(NUM_EVAL):
+                    xyz = read_traj_xyz(f"{RESULTS_DIR}{name}/{traj_name}{iter}.traj")
+                    plt.plot(xyz[0], xyz[2], label=label, color=color, linestyle=linestyle)
+
+            handles, labels = plt.gca().get_legend_handles_labels()
+            # labels will be the keys of the dict, handles will be values
+            temp = {k:v for k,v in zip(labels, handles)}
+            plt.legend(temp.values(), temp.keys(), loc='best')
+
+            plt.savefig(f'{PLOT_DIR + "/"}trajOverlay_{name}.png')
+            plt.close(plot)
+
+def three_d_plots():
+    for name in RESULT_NAMES:
+            xyz = read_traj_xyz(f"{RESULTS_DIR}{name}/gt_traj.traj")
+            plt.title('3D Trajectory')
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+            ax.set_xlabel('X Label')
+            ax.set_ylabel('Y Label')
+            ax.set_zlabel('Z Label')
+
+            plt.plot(xyz[0], xyz[1], xyz[2], label='Ground Truth', color='black')
+
+            for traj_name in ALGO_NAMES:
+                color = 'green' if traj_name == "dso_result_" else 'red'
+                linestyle = '--' if traj_name == "dso_result_" else '-'
+
+                for iter in range(NUM_EVAL):
+                    xyz = read_traj_xyz(f"{RESULTS_DIR}{name}/{traj_name}{iter}.traj")
+                    plt.plot(xyz[0], xyz[1], xyz[2], label=traj_name, color=color, linestyle=linestyle)
+            # plt.legend()
+            plt.savefig(f'{PLOT_DIR + "/"}traj3D_{name}.png')
+            # plt.show()
+            plt.close(fig)
+
 if __name__ == "__main__":
-    # if not os.path.isfile(f"{RESULTS_DIR}/gt_traj.traj") or not os.path.isfile(f"{RESULTS_DIR}/{DSO_TRAJ_NAME}.traj"):
-    RESULTS_DIR = "/Users/ryanslocum/Downloads/run_data_transfer/"
-    PLOT_DIR = "/Users/ryanslocum/Documents/class/seniorThesis/repos/lightDSO/evaluation_tools/plots/"
-    result_names = [
-        "backwards_2min",
-        "close_quarters_2min",
-        "completely_planar_2min",
-        "frequent_stops_2min",
-        "mostly_straight_2min",
-        "straight_fullspeed_3min",
-        "tricky_2min",
-        "turn_around_2min"
-    ]
 
-    algo_names = ["dso_result_", "lightDSO_result_a4_"]
-    NUM_EVAL = 5
+    # Create a directory to save the plots
+    os.makedirs(PLOT_DIR, exist_ok=True)
 
-    for name in result_names:
+    for name in RESULT_NAMES:
         clean_GT(f"{RESULTS_DIR}{name}")
-        for traj_name in algo_names:
+        for traj_name in ALGO_NAMES:
             for iter in range(NUM_EVAL):
                 print(f"Cleaning data for {name}/{traj_name}{iter}")
                 clean_data(f"{RESULTS_DIR}{name}", f"{traj_name}{iter}")
 
 
-    RPES = {}
+    top_down_plots()
+    three_d_plots()
 
-    for name in result_names:
+
+
+
+    RPES, ATES = {}, {}
+
+    logstring = "Results: \n"
+
+    for name in RESULT_NAMES:
         traj_gt = read_trajectory(f"{RESULTS_DIR}{name}/gt_traj.traj")
-        for traj_name in algo_names:
+        for traj_name in ALGO_NAMES:
+            local_rpes, local_ates = [], []
             for iter in range(NUM_EVAL):
                 traj_est = read_trajectory(f"{RESULTS_DIR}{name}/{traj_name}{iter}.traj")
                 try:
-                    result = evaluate_trajectory(traj_gt,traj_est,param_max_pairs=0)
-                    trans_error = np.array(result)[:,4]
-                    rpe = np.mean(trans_error)
+                    rpe_result = evaluate_trajectory(traj_gt,traj_est,param_max_pairs=0)
+                    rpe_trans = np.mean(np.array(rpe_result)[:,4])
+                    rpe_rot = np.mean(np.array(rpe_result)[:,5])
+                    local_rpes.append(rpe_trans)
                 except:
-                    rpe = None
-                RPES[f"{name}/{traj_name}{iter}"] = rpe
-                print(f"Evaluated RPE for {name}/{traj_name}{iter}: {rpe}")
+                    rpe_trans = None
+                    rpe_rot = None
+
+                try:
+                    ate = evaluate_ate(f"{RESULTS_DIR}{name}/gt_traj.traj", f"{RESULTS_DIR}{name}/{traj_name}{iter}.traj")
+                    local_ates.append(ate)
+                except:
+                    ate = None
+
+                RPES[f"{name}/{traj_name}{iter}"] = rpe_trans
+                ATES[f"{name}/{traj_name}{iter}"] = ate
+
+                print(f"Evaluated RPE for {name}/{traj_name}{iter}: {rpe_trans}")
+                print(f"Evaluated ATE for {name}/{traj_name}{iter}: {ate}")
+                logstring += f"Evaluated RPE for {name}/{traj_name}{iter}: {rpe_trans}\n"
+                logstring += f"Evaluated ATE for {name}/{traj_name}{iter}: {ate}\n"
+
+            logstring += "\n"
+            logstring += f"RPE average for {name}/{traj_name}: " + str(np.mean(local_rpes)) + "\n"
+            logstring += f"ATE average for {name}/{traj_name}: " + str(np.mean(local_ates)) + "\n"
+        logstring += "\n\n\n"
+
+    with open(f"{PLOT_DIR}/results.txt", 'w') as log_file:
+        log_file.write(logstring)
 
 
 
 
-    results_grid = []
 
-    for name in result_names:
-        grid = []
-        for baseline in [f"{algo_names[0]}{i}" for i in range(NUM_EVAL)]:
-            baseline_grid = []
-            baseline_rpe = RPES[f"{name}/{baseline}"]
+    rpe_result_grid, ate_result_grid = [], []
 
-            for modified in [f"{algo_names[1]}{i}" for i in range(NUM_EVAL)]:
-            
-                modified_rpe = RPES[f"{name}/{modified}"]
+    for name in RESULT_NAMES:
+        rpe_grid, ate_grid = [], []
+        for baseline in [f"{ALGO_NAMES[0]}{i}" for i in range(NUM_EVAL)]:
+            baseline_rpe_grid, baseline_ate_grid = [], []
+            baseline_rpe, baseline_ate = RPES[f"{name}/{baseline}"], ATES[f"{name}/{baseline}"]
+
+            for modified in [f"{ALGO_NAMES[1]}{i}" for i in range(NUM_EVAL)]:
+                modified_rpe, modified_ate = RPES[f"{name}/{modified}"], ATES[f"{name}/{modified}"]
                 if baseline_rpe is None or modified_rpe is None:
-                    percent_improvement = 0
+                    rpe_percent_improvement = 0
                 else:
-                    percent_improvement = round(((baseline_rpe - modified_rpe) / baseline_rpe) * 100, 2)
+                    rpe_percent_improvement = round(((baseline_rpe - modified_rpe) / baseline_rpe) * 100, 2)
+                
+                if baseline_ate is None or modified_ate is None:
+                    ate_percent_improvement = 0
+                else:
+                    ate_percent_improvement = round(((baseline_ate - modified_ate) / baseline_ate) * 100, 2)
 
-                baseline_grid.append(percent_improvement)
-            grid.append(baseline_grid)
-        results_grid.append(grid)
+                baseline_rpe_grid.append(rpe_percent_improvement)
+                baseline_ate_grid.append(ate_percent_improvement)
+            rpe_grid.append(baseline_rpe_grid)
+            ate_grid.append(baseline_ate_grid)
+        rpe_result_grid.append(rpe_grid)
+        ate_result_grid.append(ate_grid)
 
 
 
-
+    #RPE Grids
 
     # Convert the results grid to a numpy array
-    results_array = np.array(results_grid)
-
-    # Create a directory to save the plots
-    os.makedirs(PLOT_DIR + algo_names[1], exist_ok=True)
+    results_array = np.array(rpe_result_grid)
 
     # Iterate over each grid
-    for i in range(len(result_names)):
+    for i in range(len(RESULT_NAMES)):
         # Create the subplot for the current grid
         fig, ax = plt.subplots(figsize=(10, 10))
 
         # Create the heatmap for the current grid
-        ax.imshow(results_array[i,:,:], cmap='plasma', interpolation='nearest', vmin=-100, vmax=100)
+        im = ax.imshow(results_array[i,:,:], cmap='coolwarm', interpolation='nearest', vmin=-50, vmax=50)
 
         # Add the numbers to the heatmap
         for x in range(NUM_EVAL):
             for y in range(NUM_EVAL):
-                ax.text(y, x, results_array[i, x, y], ha='center', va='center', color='white')
+                ax.text(y, x, f"{round(results_array[i, x, y], 1)}%", ha='center', va='center', color='black')
 
         # Add labels and title to the subplot
-        ax.set_xlabel('Modified Trajectory')
-        ax.set_ylabel('Baseline Trajectory')
-        ax.set_title(f'{result_names[i]}')
-        print(f"Average for {result_names[i]}: {np.mean(results_array[i,:,:])}")
+        ax.set_xlabel('Modified Estimated Trajectory')
+        ax.set_ylabel('DSO Estimated Trajectory')
+        ax.set_title(f'Percent Improvement in RPE : {RESULT_NAMES[i]}')
+        fig.colorbar(im, fraction=0.046, pad=0.04)
+        print(f"RPE Average for {RESULT_NAMES[i]}: {np.mean(results_array[i,:,:])}")
 
         # Save the plot to the plot directory
-        plot_path = os.path.join(f'{PLOT_DIR + algo_names[1] + "/"}{i}_{result_names[i]}.png')
-        plt.savefig(plot_path)
+        plt.savefig(f'{PLOT_DIR + "/"}RPE_{i}_{RESULT_NAMES[i]}.png')
+
+        # Close the plot
+        plt.close(fig)
+
+
+
+    # ATE Grids
+
+    # Convert the results grid to a numpy array
+    results_array = np.array(ate_result_grid)
+
+    # Create a directory to save the plots
+    os.makedirs(PLOT_DIR, exist_ok=True)
+
+    # Iterate over each grid
+    for i in range(len(RESULT_NAMES)):
+        # Create the subplot for the current grid
+        fig, ax = plt.subplots(figsize=(10, 10))
+
+        # Create the heatmap for the current grid
+        im = ax.imshow(results_array[i,:,:], cmap='coolwarm', interpolation='nearest', vmin=-50, vmax=50)
+
+        # Add the numbers to the heatmap
+        for x in range(NUM_EVAL):
+            for y in range(NUM_EVAL):
+                ax.text(y, x, f"{round(results_array[i, x, y], 1)}%", ha='center', va='center', color='black')
+
+        # Add labels and title to the subplot
+        ax.set_xlabel('Modified Estimated Trajectory')
+        ax.set_ylabel('DSO Estimated Trajectory')
+        ax.set_title(f'Percent Improvement in ATE : {RESULT_NAMES[i]}')
+        fig.colorbar(im,fraction=0.046, pad=0.04)
+        print(f"ATE Average for {RESULT_NAMES[i]}: {np.mean(results_array[i,:,:])}")
+
+        # Save the plot to the plot directory
+        plt.savefig(f'{PLOT_DIR + "/"}ATE_{i}_{RESULT_NAMES[i]}.png')
 
         # Close the plot
         plt.close(fig)

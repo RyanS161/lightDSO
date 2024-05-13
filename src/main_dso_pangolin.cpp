@@ -66,8 +66,8 @@ float playbackSpeed=0;	// 0 for linearize (play as fast as possible, while seque
 bool preload=false;
 bool useSampleOutput=false;
 
-float illuminationIntensity=0;
-Vec3f illuminationPosition(0,0,0);
+float illuminationIntensity = 100.0f;
+Vec3f illuminationPosition(0.0f, 0.0f, 0.0f);
 
 int mode=0;
 

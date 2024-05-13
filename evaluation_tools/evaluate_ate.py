@@ -108,7 +108,21 @@ def plot_traj(ax,stamps,traj,style,color,label):
         last= stamps[i]
     if len(x)>0:
         ax.plot(x,y,style,color=color,label=label)
-            
+
+
+def evaluate_ate(gt_traj, est_traj):
+    first_list = associate.read_file_list(gt_traj)
+    second_list = associate.read_file_list(est_traj)
+
+    matches = associate.associate(first_list, second_list, 0, 0.02)    
+    if len(matches)<2:
+        sys.exit("Couldn't find matching timestamp pairs between groundtruth and estimated trajectory! Did you choose the correct sequence?")
+
+    first_xyz = numpy.matrix([[float(value) for value in first_list[a][0:3]] for a,b in matches]).transpose()
+    second_xyz = numpy.matrix([[float(value)*float(1.0) for value in second_list[b][0:3]] for a,b in matches]).transpose()
+    rot,trans,trans_error = align(second_xyz,first_xyz)
+    
+    return numpy.sqrt(numpy.dot(trans_error,trans_error) / len(trans_error))
 
 if __name__=="__main__":
     # parse command line
