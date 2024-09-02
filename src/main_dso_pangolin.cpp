@@ -55,6 +55,7 @@ std::string vignette = "";
 std::string gammaCalib = "";
 std::string source = "";
 std::string calib = "";
+std::string results_file = "result.txt";
 double rescale = 1;
 bool reverse = false;
 bool disableROS = false;
@@ -65,6 +66,8 @@ float playbackSpeed=0;	// 0 for linearize (play as fast as possible, while seque
 bool preload=false;
 bool useSampleOutput=false;
 
+float illuminationIntensity = 100.0f;
+Vec3f illuminationPosition(0.0f, 0.0f, 0.0f);
 
 int mode=0;
 
@@ -278,6 +281,13 @@ void parseArgument(char* arg)
 		return;
 	}
 
+	if(1==sscanf(arg,"resultFile=%s",buf))
+	{
+		results_file = buf;
+		printf("saving results to %s!\n", results_file.c_str());
+		return;
+	}
+
 	if(1==sscanf(arg,"vignette=%s",buf))
 	{
 		vignette = buf;
@@ -303,6 +313,31 @@ void parseArgument(char* arg)
 	{
 		playbackSpeed = foption;
 		printf("PLAYBACK SPEED %f!\n", playbackSpeed);
+		return;
+	}
+
+	if(1==sscanf(arg,"illuminationIntensity=%f",&foption))
+	{
+		illuminationIntensity = foption;
+		printf("IlluminationIntensity %f!\n", illuminationIntensity);
+		return;
+	}
+	if(1==sscanf(arg,"illuminationX=%f",&foption))
+	{
+		illuminationPosition[0] = foption;
+		printf("illuminationPosition X %f!\n", illuminationPosition[0]);
+		return;
+	}
+	if(1==sscanf(arg,"illuminationY=%f",&foption))
+	{
+		illuminationPosition[1] = foption;
+		printf("illuminationPosition Y %f!\n", illuminationPosition[1]);
+		return;
+	}
+	if(1==sscanf(arg,"illuminationZ=%f",&foption))
+	{
+		illuminationPosition[2] = foption;
+		printf("IlluminationIntensity Z %f!\n", illuminationPosition[2]);
 		return;
 	}
 
@@ -392,6 +427,8 @@ int main( int argc, char** argv )
 
 	FullSystem* fullSystem = new FullSystem();
 	fullSystem->setGammaFunction(reader->getPhotometricGamma());
+	fullSystem->illuminationIntensity = illuminationIntensity;
+	fullSystem->illuminationPosition = illuminationPosition;
 	fullSystem->linearizeOperation = (playbackSpeed==0);
 
 
@@ -531,7 +568,7 @@ int main( int argc, char** argv )
         gettimeofday(&tv_end, NULL);
 
 
-        fullSystem->printResult("result.txt");
+        fullSystem->printResult(results_file);
 
 
         int numFramesProcessed = abs(idsToPlay[0]-idsToPlay.back());

@@ -93,6 +93,9 @@ double PointFrameResidual::linearize(CalibHessian* HCalib)
 	const float * const color = point->color;
 	const float * const weights = point->weights;
 
+	const Vec3f &light_vec = host->shell->illuminationPosition;
+	const float light_int = host->shell->illuminationIntensity;
+
 	Vec2f affLL = precalc->PRE_aff_mode;
 	float b0 = precalc->PRE_b0_mode;
 
@@ -100,10 +103,10 @@ double PointFrameResidual::linearize(CalibHessian* HCalib)
 	Vec6f d_xi_x, d_xi_y;
 	Vec4f d_C_x, d_C_y;
 	float d_d_x, d_d_y;
+	Vec3f KliP;
 	{
 		float drescale, u, v, new_idepth;
 		float Ku, Kv;
-		Vec3f KliP;
 
 		if(!projectPoint(point->u, point->v, point->idepth_zero_scaled, 0, 0,HCalib,
 				PRE_RTll_0,PRE_tTll_0, drescale, u, v, Ku, Kv, KliP, new_idepth))
@@ -191,8 +194,14 @@ double PointFrameResidual::linearize(CalibHessian* HCalib)
 
 
         Vec3f hitColor = (getInterpolatedElement33(dIl, Ku, Kv, wG[0]));
-        float residual = hitColor[0] - (float)(affLL[0] * color[idx] + affLL[1]);
 
+		const float LIGHT_LAMBDA = 1;
+		Vec3f current_point = Vec3f(KliP[0], KliP[1], 1/(point->idepth_scaled));
+		Vec3f light_to_point = current_point - light_vec;
+		float light_to_point_len = light_to_point.norm();
+		float reflectedLightIntensity = LIGHT_LAMBDA * light_int * (1/(light_to_point_len*light_to_point_len));
+        float residual = hitColor[0] - (float)(affLL[0] * color[idx] + affLL[1]) - reflectedLightIntensity;
+		//printf("Current P:  (%.2f, %.2f, %.2f) | Distance: %.3f | ReflectedLightIntensity : %f | residual %f | oldRes: %f\n", current_point[0], current_point[1], current_point[2], light_to_point_len, reflectedLightIntensity, residual, residual + reflectedLightIntensity);
 
 
 		float drdA = (color[idx]-b0);
